@@ -1,0 +1,28 @@
+{
+  "network": {
+    "name": "X Layer Mainnet",
+    "chainId": 196,
+    "nativeCurrency": "OKB",
+    "rpcUrl": "https://rpc.xlayer.tech",
+    "explorerUrl": "https://www.oklink.com/xlayer"
+  },
+  "uniswapV4": {
+    "poolManager": "0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32",
+    "poolId": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "initializeTx": "",
+    "hookPermissionMask": "0x0450"
+  },
+  "contracts": {
+    "qusd": "",
+    "dragon": "",
+    "hook": "",
+    "router": ""
+  },
+  "demo": {
+    "entryFeeQusd": "1",
+    "initialBudgetQusd": "100",
+    "holdSeconds": 180,
+    "path": ["Donate", "Add LP", "Buy DRAGON", "Hold", "Sell DRAGON"]
+  },
+  "lastUpdated": ""
+}
