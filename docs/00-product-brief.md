@@ -2,25 +2,22 @@
 
 ## One-line
 
-PoolQuest is an on-chain Agent dungeon platform where creators spend QUSD to create AI-designed AMM quests, players use real Uniswap V4 pool actions to solve hidden paths, and Hook contracts record verifiable progress on X Layer.
+PoolQuest is an on-chain Agent dungeon platform where creators use prompts to create AI-designed AMM quests, players use real Uniswap V4 pool actions to solve hidden riddle paths, and Hook contracts record verifiable progress on X Layer.
 
 ## Core Concept
 
-Creator designs the world. AI generates the hidden quest. Backend stores the private rule. Hook records verifiable state, progress events, and rule commitments on X Layer. Player discovers the path through AMM actions and Agent feedback.
+Creator describes the world. LLM generates the hidden quest path, riddle feedback, and hint ladder. Backend stores the private rule. Hook records verifiable state and progress events on X Layer. Player discovers the path through AMM actions and Agent riddle feedback.
 
 ## Platform Currency
 
 `QUSD` is the PoolQuest platform coin.
 
-It is not an external stablecoin in this product design. It is the common unit for:
-
-- Agent creation cost
+It is the common unit for:
 - Player entry fee
 - Standard challenge budget
 - Donate action
 - Agent hint fee
 - Prize pool
-- Creator escrow
 - Platform fees
 - Player protection fund
 
@@ -30,45 +27,66 @@ Every Agent pool is:
 AgentToken / QUSD
 ```
 
-Each published Agent must create or bind a real Agent role token. The Agent token is the main asset of that dungeon pool and should be named from the Agent identity.
-
-Examples:
-
-```text
-Dragon Agent -> DRAGON / QUSD
-Witch Agent  -> WITCH / QUSD
-Monk Agent   -> MONK / QUSD
-Devil Agent  -> DEVIL / QUSD
-```
+Each published Agent creates or binds a real Agent role token. The Agent token is the main asset of that dungeon pool, named from the Agent identity by LLM.
 
 ## Primary Roles
 
 ### Creator
 
-Creates an Agent dungeon by providing a theme and intent prompt. Pays `100 QUSD` to create and publish an Agent. This amount is split into `20 QUSD` platform creation fee and `80 QUSD` minimum initial prize pool for MVP.
+Creates an Agent dungeon by providing a theme and intent prompt. **Free to create in MVP.** The system calls LLM to generate a complete hidden quest, then validates it can be completed before publishing.
 
 Creator can see the complete hidden path for their own Agent in a creator-only management view. Players never receive the hidden action path directly.
 
 ### Player
 
-Selects an Agent, pays entry fee in QUSD, and interacts with the AgentToken/QUSD pool through Swap, Add LP, Remove LP, Donate, Hold, and Ask Agent.
+Selects an Agent, pays 5 QUSD entry fee, and interacts with the AgentToken/QUSD pool through Swap, Add LP, Remove LP, Donate, Hold, and Ask Agent.
 
-Player never receives the hidden action path directly.
+Player never receives the hidden action path directly. They explore through trial and error, guided by riddle-like feedback.
 
 ### Agent
 
 The Agent is the narrative interface. It gives:
-
-- Opening prophecy
-- Free fuzzy feedback after each action
-- Paid hints with escalating cost and score penalty
+- Opening prophecy (riddle, hints at first 1-2 steps only)
+- Free fuzzy riddle feedback after each action (never confirms correct/incorrect)
+- Paid hints with escalating cost and score penalty (from vague to near-answer)
 
 The Agent does not decide whether a player succeeded. Rule Engine and Hook state do.
 
 ### Hook
 
-The Hook is the verifiable AMM rule surface. MVP hidden rules live in the backend; Hook records key player actions, progress events, punishments, hints, completion events, and `ruleHash/solutionHash` commitments on X Layer.
+The Hook is the verifiable AMM rule surface. It records player actions, progress events, hints, completion, and rule/solution hash commitments on X Layer. Full hidden rules live in the backend; Hook provides the on-chain proof layer.
+
+## Economic Model (MVP)
+
+### Entry Fee: 5 QUSD
+
+| Destination | Share |
+|---|---|
+| Prize Pool | 60% (3 QUSD) |
+| Platform | 20% (1 QUSD) |
+| Creator Revenue | 10% (0.5 QUSD) |
+| Protection Fund | 10% (0.5 QUSD) |
+
+### Hook Fee: 0.05% per swap
+
+MVP: 100% to platform.
+
+### Hint Fee: paid in QUSD
+
+MVP: 100% goes to prize pool. Using hints increases the prize pool, benefiting non-hint players.
+
+### Cold Start
+
+Platform injects 200 QUSD seed prize pool for the first period.
+
+### Player P&L
+
+Players know upfront: maximum loss is ~5.5 QUSD (entry fee + gas). This is acceptable entertainment cost.
 
 ## Product Promise
 
-Players should feel they are solving a living on-chain riddle, not following a visible checklist. The UI should expose mystery, state, cost, and feedback, while hiding the solution.
+Players should feel they are solving a living on-chain riddle through exploration, not following a visible checklist. The LLM generates unique riddle-style content for every Agent, so no two dungeons feel the same. The UI exposes mystery, state, cost, and feedback, while hiding the solution.
+
+## Competition Alignment
+
+PoolQuest demonstrates Uniswap V4 Hook innovation by repurposing `afterSwap`, `afterAddLiquidity`, `afterRemoveLiquidity`, and `afterDonate` as game state recorders — not just DeFi interceptors. Hook events become indexable game events (progress, hints, completion, scores), creating a new category of application-layer Hook usage on X Layer.
