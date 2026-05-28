@@ -28,17 +28,24 @@ const env = Object.fromEntries(
 );
 
 const rpcUrl = env.XLAYER_RPC_URL || 'https://rpc.xlayer.tech';
+const chainId = Number(env.CHAIN_ID || 196);
+const networkName = env.NETWORK_NAME || (chainId === 1952 ? 'X Layer Testnet' : 'X Layer Mainnet');
+const explorerUrl = env.EXPLORER_URL || (
+  chainId === 1952
+    ? 'https://www.okx.com/web3/explorer/xlayer-test'
+    : 'https://www.okx.com/web3/explorer/xlayer'
+);
 const privateKey = env.PRIVATE_KEY;
 if (!privateKey || /^0x0+$/.test(privateKey)) {
   throw new Error('Set PRIVATE_KEY in contracts/.env before deploying.');
 }
 
 const xlayer = defineChain({
-  id: 196,
-  name: 'X Layer Mainnet',
+  id: chainId,
+  name: networkName,
   nativeCurrency: { name: 'OKB', symbol: 'OKB', decimals: 18 },
   rpcUrls: { default: { http: [rpcUrl] } },
-  blockExplorers: { default: { name: 'OKLink', url: 'https://www.oklink.com/xlayer' } }
+  blockExplorers: { default: { name: 'OKX Explorer', url: explorerUrl } }
 });
 
 const account = privateKeyToAccount(privateKey);
@@ -50,9 +57,13 @@ const QuestToken = artifact('QuestToken');
 const PoolQuestHook = artifact('PoolQuestHook');
 const PoolQuestRouter = artifact('PoolQuestRouter');
 const Create2Deployer = artifact('Create2Deployer');
+const PoolQuestRegistry = artifact('PoolQuestRegistry');
+const PrizeVault = artifact('PrizeVault');
+const FeeVault = artifact('FeeVault');
+const PoolManager = artifact('PoolManager');
 
-const poolManager = '0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32';
-const hookMask = 0x0450n;
+let poolManager = env.POOL_MANAGER_ADDRESS || '0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32';
+const hookMask = 0x0550n;
 const sqrtPriceX96OneToOne = 79228162514264337593543950336n;
 const poolManagerAbi = parseAbi([
   'function initialize((address currency0,address currency1,uint24 fee,int24 tickSpacing,address hooks) key,uint160 sqrtPriceX96) external returns (int24 tick)'
@@ -83,7 +94,36 @@ const mineSalt = async (deployerAddress, bytecode, args) => {
   return null;
 };
 
-console.log(`Deploying from ${account.address} on X Layer...`);
+const chainIdOnRpc = await publicClient.getChainId();
+if (chainIdOnRpc !== chainId) {
+  throw new Error(`RPC chainId mismatch: env CHAIN_ID=${chainId}, RPC returned ${chainIdOnRpc}.`);
+}
+
+const balance = await publicClient.getBalance({ address: account.address });
+if (balance === 0n) {
+  throw new Error(
+    `Deployment wallet ${account.address} has 0 OKB on ${networkName}. Fund it from the X Layer testnet faucet first.`,
+  );
+}
+
+const poolManagerCode = await publicClient.getBytecode({ address: poolManager });
+if (!poolManagerCode) {
+  if (env.DEPLOY_POOL_MANAGER !== 'true') {
+    throw new Error(
+      `PoolManager ${poolManager} has no code on ${networkName}. Set DEPLOY_POOL_MANAGER=true to deploy a v4 PoolManager for this testnet, or set POOL_MANAGER_ADDRESS to an existing deployment.`,
+    );
+  }
+
+  const deployedPoolManager = await deploy({
+    abi: PoolManager.abi,
+    bytecode: PoolManager.evm.bytecode,
+    args: [account.address]
+  });
+  poolManager = deployedPoolManager.address;
+  console.log(`PoolManager deployed at ${poolManager}: ${deployedPoolManager.hash}`);
+}
+
+console.log(`Deploying from ${account.address} on ${networkName} (${chainId})...`);
 
 const qusd = await deploy({
   abi: QuestToken.abi,
@@ -101,13 +141,25 @@ const create2Factory = await deploy({
   args: []
 });
 
-const mined = await mineSalt(create2Factory.address, PoolQuestHook.evm.bytecode, [
-  account.address,
-  account.address,
-  account.address
-]);
+const registry = await deploy({
+  abi: PoolQuestRegistry.abi,
+  bytecode: PoolQuestRegistry.evm.bytecode,
+  args: []
+});
+const prizeVault = await deploy({
+  abi: PrizeVault.abi,
+  bytecode: PrizeVault.evm.bytecode,
+  args: [qusd.address]
+});
+const feeVault = await deploy({
+  abi: FeeVault.abi,
+  bytecode: FeeVault.evm.bytecode,
+  args: [qusd.address, prizeVault.address, account.address]
+});
+
+const mined = await mineSalt(create2Factory.address, PoolQuestHook.evm.bytecode, [poolManager, account.address]);
 if (!mined) {
-  throw new Error('No CREATE2 salt found in 1,000,000 attempts for Hook permission mask 0x0450.');
+  throw new Error('No CREATE2 salt found in 1,000,000 attempts for Hook permission mask 0x0550.');
 }
 
 const hookHash = await walletClient.writeContract({
@@ -151,13 +203,12 @@ await publicClient.waitForTransactionReceipt({ hash: initializeTx });
 const router = await deploy({
   abi: PoolQuestRouter.abi,
   bytecode: PoolQuestRouter.evm.bytecode,
-  args: [qusd.address, dragon.address, hook.address, poolManager, '0x'.padEnd(66, '0')]
+  args: [qusd.address, dragon.address, hook.address, feeVault.address, poolManager]
 });
-
 await walletClient.writeContract({
   address: hook.address,
   abi: PoolQuestHook.abi,
-  functionName: 'setRouter',
+  functionName: 'transferOwnership',
   args: [router.address]
 });
 await walletClient.writeContract({
@@ -174,12 +225,24 @@ await walletClient.writeContract({
 });
 
 const deploymentPath = path.resolve(env.DEPLOYMENT_OUT || 'deployments/xlayer.json');
-const current = JSON.parse(fs.readFileSync(deploymentPath, 'utf8'));
+const current = fs.existsSync(deploymentPath)
+  ? JSON.parse(fs.readFileSync(deploymentPath, 'utf8'))
+  : {};
 const next = {
   ...current,
+  network: {
+    name: networkName,
+    chainId,
+    nativeCurrency: 'OKB',
+    rpcUrl,
+    explorerUrl
+  },
   contracts: {
     qusd: qusd.address,
     dragon: dragon.address,
+    registry: registry.address,
+    prizeVault: prizeVault.address,
+    feeVault: feeVault.address,
     hook: hook.address,
     router: router.address
   },
@@ -188,10 +251,22 @@ const next = {
     poolManager,
     poolId,
     initializeTx,
-    hookPermissionMask: '0x0450'
+    hookPermissionMask: '0x0550'
   },
   lastUpdated: new Date().toISOString()
 };
 fs.writeFileSync(deploymentPath, JSON.stringify(next, null, 2));
 
-console.log(JSON.stringify({ qusd, dragon, create2Factory, hook, router, hookSalt: mined.salt.toString() }, null, 2));
+console.log(JSON.stringify({
+  qusd,
+  dragon,
+  registry,
+  prizeVault,
+  feeVault,
+  create2Factory,
+  hook,
+  router,
+  poolId,
+  initializeTx,
+  hookSalt: mined.salt.toString()
+}, null, 2));

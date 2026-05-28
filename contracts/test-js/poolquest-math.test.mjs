@@ -22,8 +22,8 @@ const hintPenalty = ({ level, hintCount, progress }) => {
   return (base * repeatBps(hintCount + 1) * progressBps(progress)) / 100_000_000n;
 };
 
-test('hook permission mask matches afterAddLiquidity + afterSwap + afterDonate', () => {
-  assert.equal((1 << 10) | (1 << 6) | (1 << 4), 0x0450);
+test('hook permission mask matches afterAddLiquidity + afterRemoveLiquidity + afterSwap + afterDonate', () => {
+  assert.equal((1 << 10) | (1 << 8) | (1 << 6) | (1 << 4), 0x0550);
 });
 
 test('hint penalties increase by level, repeat count, and progress', () => {
