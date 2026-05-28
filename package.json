@@ -4,20 +4,22 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "backend:dev": "node backend/server.mjs",
+    "backend:dev": "npm --workspace backend run dev",
+    "backend:build": "npm --workspace backend run build",
     "contracts:compile": "node contracts/test-js/compile.mjs",
     "contracts:test": "node --test contracts/test-js/*.test.mjs",
     "dev": "npm run backend:dev & npm run frontend:dev",
     "frontend:dev": "npm --workspace frontend run dev",
     "frontend:build": "npm --workspace frontend run build",
     "frontend:typecheck": "npm --workspace frontend run typecheck",
-    "test": "npm run contracts:compile && npm run contracts:test && npm run frontend:typecheck && npm run frontend:build"
+    "test": "npm run contracts:compile && npm run contracts:test && npm run backend:build && npm run frontend:typecheck && npm run frontend:build"
   },
   "workspaces": [
-    "frontend"
+    "frontend",
+    "backend"
   ],
   "devDependencies": {
-    "solc": "^0.8.30",
+    "solc": "^0.8.26",
     "typescript": "^5.8.3",
     "viem": "^2.30.0"
   }

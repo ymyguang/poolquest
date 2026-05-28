@@ -1,9 +1,15 @@
 .DS_Store
 node_modules/
+backend/dist/
 frontend/dist/
 frontend/tsconfig.tsbuildinfo
 contracts/build/
 contracts/out/
 contracts/cache/
+cache/
 contracts/.env
 .env
+backend/.env
+.history/
+*.log
+foundry.lock
