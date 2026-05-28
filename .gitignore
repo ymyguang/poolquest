@@ -13,3 +13,5 @@ backend/.env
 .history/
 *.log
 foundry.lock
+AGENTS.md
+玩法.md
