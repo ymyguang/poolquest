@@ -15,6 +15,7 @@ import {
   getRun, fetchScore, type AgentDetail, type Run,
   type ScoreBreakdown,
 } from '../lib/api';
+import { getUiLanguage, prophecyText, stageText, text } from '../lib/i18n';
 
 type Message = { role: 'agent' | 'system' | 'player'; text: string };
 type ChainTx = { label: string; hash: Hash };
@@ -28,13 +29,22 @@ const CHAIN_ACTIONS = new Set<ChainActionType>([
   'hold'
 ]);
 
-const ACTION_LABELS: Record<string, string> = {
+const ACTION_LABELS_ZH: Record<string, string> = {
   swap_buy: '买入 DRAGON',
   swap_sell: '卖出 DRAGON',
   add_liquidity: '添加流动性',
   remove_liquidity: '移除流动性',
   donate: '捐赠 QUSD',
   hold: '等待时机'
+};
+
+const ACTION_LABELS_EN: Record<string, string> = {
+  swap_buy: 'Buy DRAGON',
+  swap_sell: 'Sell DRAGON',
+  add_liquidity: 'Add Liquidity',
+  remove_liquidity: 'Remove Liquidity',
+  donate: 'Donate QUSD',
+  hold: 'Hold'
 };
 
 export function RunInteraction({ wallet }: { wallet: WalletState }) {
@@ -49,6 +59,8 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
   const [timeLeft, setTimeLeft] = useState(600);
   const [chainTxs, setChainTxs] = useState<ChainTx[]>([]);
   const [balances, setBalances] = useState<DemoBalances | null>(null);
+  const lang = getUiLanguage();
+  const actionLabels = lang === 'en' ? ACTION_LABELS_EN : ACTION_LABELS_ZH;
 
   // Load agent data
   useEffect(() => {
@@ -84,7 +96,7 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
   const onStart = async () => {
     if (!agentId || !agent) return;
     if (!wallet.address) {
-      setError('请先连接钱包并切换到 X Layer Testnet。');
+      setError(text(lang, 'Connect wallet and switch to X Layer Testnet first.', '请先连接钱包并切换到 X Layer Testnet。'));
       return;
     }
     setBusy(true);
@@ -100,7 +112,9 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
       setChainTxs((prev) => [
         ...prev,
         ...txs.map((hash, index) => ({
-          label: index === txs.length - 1 ? '进入试炼' : '链上准备',
+          label: index === txs.length - 1
+            ? text(lang, 'Enter Trial', '进入试炼')
+            : text(lang, 'On-chain Setup', '链上准备'),
           hash
         }))
       ]);
@@ -111,11 +125,11 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
       setTimeLeft(600);
       // Show opening prophecy
       const detail = await fetchAgent(agentId);
-      addMessage({ role: 'agent', text: detail.profile.openingProphecy });
-      addMessage({ role: 'system', text: '链上试炼已启动：后续动作会发送到 X Layer Testnet，并由 Hook 记录。' });
+      addMessage({ role: 'agent', text: prophecyText(detail.profile.openingProphecy, lang) });
+      addMessage({ role: 'system', text: text(lang, 'On-chain trial started: later actions are sent to X Layer Testnet and recorded by the Hook.', '链上试炼已启动：后续动作会发送到 X Layer Testnet，并由 Hook 记录。') });
       await refreshBalances();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start');
+      setError(err instanceof Error ? err.message : text(lang, 'Failed to start', '启动失败'));
     } finally {
       setBusy(false);
     }
@@ -132,8 +146,8 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
         txHash = await executeOnChainAction(wallet.address!, actionType as ChainActionType);
         if (txHash) {
           const confirmedTx = txHash;
-          setChainTxs((prev) => [...prev, { label: actionType, hash: confirmedTx }]);
-          addMessage({ role: 'system', text: `链上交易已确认：${confirmedTx.slice(0, 10)}...${confirmedTx.slice(-6)}` });
+          setChainTxs((prev) => [...prev, { label: actionLabels[actionType] ?? actionType, hash: confirmedTx }]);
+          addMessage({ role: 'system', text: `${text(lang, 'On-chain transaction confirmed', '链上交易已确认')}：${confirmedTx.slice(0, 10)}...${confirmedTx.slice(-6)}` });
         }
       }
       const result = await submitAction(run.id, actionType, {
@@ -143,7 +157,7 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
       addMessage({ role: 'agent', text: result.feedback.message });
       await refreshBalances();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '动作执行失败');
+      setError(err instanceof Error ? err.message : text(lang, 'Action failed', '动作执行失败'));
     } finally {
       setBusy(false);
     }
@@ -155,14 +169,14 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
     setError('');
     try {
       const hint = await purchaseHint(run.id, hintLevel);
-      addMessage({ role: 'agent', text: `[提示 ${hintLevel}] ${hint.message}` });
-      addMessage({ role: 'system', text: `消耗：${hint.feeQusd} QUSD | 分数惩罚：-${hint.scorePenalty}` });
+      addMessage({ role: 'agent', text: `[${text(lang, 'Hint', '提示')} ${hintLevel}] ${hint.message}` });
+      addMessage({ role: 'system', text: `${text(lang, 'Cost', '消耗')}：${hint.feeQusd} QUSD | ${text(lang, 'Score penalty', '分数惩罚')}：-${hint.scorePenalty}` });
       // Refresh run state
       const updated = await getRun(run.id);
       setRun(updated);
       await refreshBalances();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '提示请求失败');
+      setError(err instanceof Error ? err.message : text(lang, 'Hint request failed', '提示请求失败'));
     } finally {
       setBusy(false);
     }
@@ -176,7 +190,7 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
   }, [run?.status, run?.id]);
 
   if (!agent) {
-    return <div className="loading">正在加载 Agent...</div>;
+    return <div className="loading">{text(lang, 'Loading Agent...', '正在加载 Agent...')}</div>;
   }
 
   const { profile } = agent;
@@ -191,14 +205,14 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
 
   return (
     <section className="run-interaction">
-      <Link to={`/agents/${agentId}`} className="back-link">&larr; 返回 Agent</Link>
+      <Link to={`/agents/${agentId}`} className="back-link">&larr; {text(lang, 'Back to Agent', '返回 Agent')}</Link>
 
       <div className="run-layout">
         <div className="run-left">
           <div className="progress-section">
-            <h2>{agent.agent.name} 试炼</h2>
+            <h2>{agent.agent.name} {text(lang, 'Trial', '试炼')}</h2>
             <div className="chain-status-row">
-              <span>真实 X Layer Testnet 交易，PoolManager 触发 Hook 记录玩家动作</span>
+              <span>{text(lang, 'Real X Layer Testnet transactions. PoolManager triggers Hook to record player actions.', '真实 X Layer Testnet 交易，PoolManager 触发 Hook 记录玩家动作')}</span>
               {balances && (
                 <span>QUSD {balances.qusd} / {agent.agent.tokenSymbol} {balances.dragon}</span>
               )}
@@ -214,40 +228,40 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
                 return (
                   <div key={i} className={`stage-node status-${status}`}>
                     <span className="stage-icon">{icon}</span>
-                    <span className="stage-name">{stage}</span>
+                    <span className="stage-name">{stageText(stage, lang)}</span>
                   </div>
                 );
               })}
             </div>
             {isActive && (
               <div className="run-timer">
-                剩余时间：<span className={timeLeft < 120 ? 'timer-danger' : ''}>{formatTime(timeLeft)}</span>
+                {text(lang, 'Time left', '剩余时间')}：<span className={timeLeft < 120 ? 'timer-danger' : ''}>{formatTime(timeLeft)}</span>
               </div>
             )}
           </div>
 
           {isCompleted && score && (
             <div className="score-box">
-              <h3>试炼完成！总分：{score.totalScore}</h3>
+              <h3>{text(lang, 'Trial completed! Total score', '试炼完成！总分')}：{score.totalScore}</h3>
               <div className="score-grid">
-                <div>完成度：+{score.completionScore}</div>
-                <div>净值：{score.netWorthScore >= 0 ? '+' : ''}{score.netWorthScore}</div>
-                <div>时间：+{score.timeScore}</div>
-                <div>效率：+{score.efficiencyScore}</div>
+                <div>{text(lang, 'Completion', '完成度')}：+{score.completionScore}</div>
+                <div>{text(lang, 'Net Worth', '净值')}：{score.netWorthScore >= 0 ? '+' : ''}{score.netWorthScore}</div>
+                <div>{text(lang, 'Time', '时间')}：+{score.timeScore}</div>
+                <div>{text(lang, 'Efficiency', '效率')}：+{score.efficiencyScore}</div>
                 <div>LP：{score.lpContributionScore >= 0 ? '+' : ''}{score.lpContributionScore}</div>
-                <div>提示惩罚：-{score.hintPenalty}</div>
-                <div>诅咒惩罚：-{score.cursePenalty}</div>
+                <div>{text(lang, 'Hint Penalty', '提示惩罚')}：-{score.hintPenalty}</div>
+                <div>{text(lang, 'Curse Penalty', '诅咒惩罚')}：-{score.cursePenalty}</div>
               </div>
             </div>
           )}
 
           {isFailed && (
-            <div className="error-box">试炼失败：时间耗尽或条件未满足。</div>
+            <div className="error-box">{text(lang, 'Trial failed: time expired or conditions were not met.', '试炼失败：时间耗尽或条件未满足。')}</div>
           )}
 
           {chainTxs.length > 0 && (
             <div className="chain-tx-box">
-              <h3>链上证明</h3>
+              <h3>{text(lang, 'On-chain Proof', '链上证明')}</h3>
               <div className="chain-tx-list">
                 {chainTxs.slice(-6).map((tx) => (
                   <a key={tx.hash} href={txUrl(tx.hash)} target="_blank" rel="noreferrer">
@@ -260,7 +274,7 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
           )}
 
           <div className="action-section">
-            <h3>玩家动作</h3>
+            <h3>{text(lang, 'Player Actions', '玩家动作')}</h3>
             <div className="action-grid">
               {profile.publicActions.map((a) => (
                 <button
@@ -270,29 +284,29 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
                   onClick={() => onAction(a.id)}
                   title={a.lore}
                 >
-                  {ACTION_LABELS[a.id] ?? a.label}
+                  {actionLabels[a.id] ?? a.label}
                 </button>
               ))}
             </div>
 
             {!run && (
               <button className="btn btn-primary btn-lg" onClick={onStart} disabled={busy}>
-                {busy ? '启动中...' : `开始链上试炼 - ${agent.agent.entryFeeQusd} QUSD`}
+                {busy ? text(lang, 'Starting...', '启动中...') : `${text(lang, 'Start On-chain Trial', '开始链上试炼')} - ${agent.agent.entryFeeQusd} QUSD`}
               </button>
             )}
           </div>
 
           {isActive && (
             <div className="hint-section">
-              <h3>向 Agent 请求提示</h3>
+              <h3>{text(lang, 'Ask Agent For Hint', '向 Agent 请求提示')}</h3>
               <div className="hint-controls">
                 <select value={hintLevel} onChange={(e) => setHintLevel(Number(e.target.value) as 1 | 2 | 3)}>
-                  <option value={1}>等级 1 - 方向</option>
-                  <option value={2}>等级 2 - 范围</option>
-                  <option value={3}>等级 3 - 接近答案</option>
+                  <option value={1}>{text(lang, 'Level 1 - Direction', '等级 1 - 方向')}</option>
+                  <option value={2}>{text(lang, 'Level 2 - Range', '等级 2 - 范围')}</option>
+                  <option value={3}>{text(lang, 'Level 3 - Near Answer', '等级 3 - 接近答案')}</option>
                 </select>
                 <button className="btn btn-secondary" onClick={onHint} disabled={busy}>
-                  请求提示（等级 {hintLevel}）
+                  {text(lang, 'Request Hint', '请求提示')} ({text(lang, 'Level', '等级')} {hintLevel})
                 </button>
               </div>
             </div>
@@ -305,14 +319,14 @@ export function RunInteraction({ wallet }: { wallet: WalletState }) {
           <div className="chat-section">
             <div className="chat-header">
               <div>
-                <h3>Agent 对话</h3>
-                <span>{agent.agent.name} 会用谜语反馈链上动作</span>
+                <h3>{text(lang, 'Agent Dialogue', 'Agent 对话')}</h3>
+                <span>{text(lang, `${agent.agent.name} responds to on-chain actions with riddles`, `${agent.agent.name} 会用谜语反馈链上动作`)}</span>
               </div>
               <span className="token-badge">{agent.agent.tokenSymbol}</span>
             </div>
             <div className="chat-messages">
               {messages.length === 0 && (
-                <div className="chat-empty">开始试炼后，Agent 会在这里回应。</div>
+                <div className="chat-empty">{text(lang, 'After the trial starts, the Agent will respond here.', '开始试炼后，Agent 会在这里回应。')}</div>
               )}
               {messages.map((m, i) => (
                 <div key={i} className={`chat-msg chat-${m.role}`}>

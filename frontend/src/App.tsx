@@ -9,19 +9,27 @@ import { DesignReview } from './pages/DesignReview';
 import { PublishConfirm } from './pages/PublishConfirm';
 import { xLayer } from './config/wagmi';
 import type { WalletState } from './lib/wallet';
+import { isReadmePreview } from './lib/i18n';
 
 export default function App() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const wallet: WalletState = {
-    address: address ?? null,
-    chainId: chainId ?? null,
-    status: !isConnected
+  const preview = isReadmePreview();
+  const wallet: WalletState = preview
+    ? {
+      address: '0x000000000000000000000000000000000000dEaD',
+      chainId: xLayer.id,
+      status: 'connected'
+    }
+    : {
+      address: address ?? null,
+      chainId: chainId ?? null,
+      status: !isConnected
       ? 'disconnected'
       : chainId === xLayer.id
         ? 'connected'
         : 'wrong-network'
-  };
+    };
 
   return (
     <BrowserRouter>

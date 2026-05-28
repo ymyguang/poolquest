@@ -1,0 +1,13 @@
+PoolQuest is a Uniswap V4 Hook game deployed on X Layer Testnet.
+
+Players solve AI riddles through real AMM actions: swap, donate, add liquidity, and remove liquidity.
+
+Creators build AI powered Agent dungeons. Each Agent connects to a V4 Pool and a custom Hook.
+
+The deployed Hook, Pool ID, Router, tokens, and initialization transaction are verifiable on OKX Explorer.
+
+During a run, player actions go through PoolQuest Router, into the V4 PoolManager, and trigger PoolQuest Hook callbacks.
+
+The Hook records on-chain progress, while the rule engine and AI layer generate riddles, hints, penalties, and scoring.
+
+PoolQuest demonstrates Hook-native gameplay for the V4 era, built on X Layer for Build X.
