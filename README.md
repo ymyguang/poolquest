@@ -51,7 +51,6 @@ deployments/   Deployment metadata (xlayer.json)
 
 | Document | Description |
 |---|---|
-| [玩法.md](玩法.md) | Complete gameplay rules V1.0 |
 | [00-product-brief.md](docs/00-product-brief.md) | Product brief |
 | [01-pages-and-flows.md](docs/01-pages-and-flows.md) | 6 pages + user flows |
 | [02-system-architecture.md](docs/02-system-architecture.md) | System architecture + adapter layer |
