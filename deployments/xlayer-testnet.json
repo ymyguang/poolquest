@@ -1,0 +1,37 @@
+{
+  "network": {
+    "name": "X Layer Testnet",
+    "chainId": 1952,
+    "nativeCurrency": "OKB",
+    "rpcUrl": "https://testrpc.xlayer.tech/terigon",
+    "explorerUrl": "https://www.okx.com/web3/explorer/xlayer-test"
+  },
+  "uniswapV4": {
+    "poolManager": "0xd31e381a9475e1952d86b43042abfe5713b2f536",
+    "poolId": "0x868817845dbd762a6c5138cfcd9dda1f0c2f6a760e47a18bd860da50d98677a3",
+    "initializeTx": "0x9fe67e1460992203d72920d055ff9fd4ec5806c56092f0f6eb7b80d80b5b69bf",
+    "hookPermissionMask": "0x0550"
+  },
+  "contracts": {
+    "qusd": "0xde50d479bbbdb70958e928fe8bb91821443820d7",
+    "dragon": "0xd61c3fcd363ffa879b5ef29b6d9eeea044eddcbf",
+    "registry": "0x200421c95a5a617d8f3a6f5bf65c3751b8109544",
+    "prizeVault": "0x9e9cbb25ee3db198dcd5bc01a5fbfe04b6dfea06",
+    "feeVault": "0x10c5ac7960b676ace12224506c24bdba0dd65248",
+    "hook": "0x7E51c8E4c3F9F4854d0DAeaCAb4237bD2563C550",
+    "router": "0xa47e5be41ea97987a3cf7e658fc5500e99b0a420"
+  },
+  "demo": {
+    "entryFeeQusd": "5",
+    "initialBudgetQusd": "100",
+    "holdSeconds": 180,
+    "path": [
+      "Donate",
+      "Add LP",
+      "Buy DRAGON",
+      "Hold",
+      "Sell DRAGON"
+    ]
+  },
+  "lastUpdated": "2026-05-28T15:04:38.864Z"
+}

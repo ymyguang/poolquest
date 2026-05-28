@@ -10,16 +10,19 @@
     "poolManager": "0x360E68faCcca8cA495c1B759Fd9EEe466db9FB32",
     "poolId": "0x0000000000000000000000000000000000000000000000000000000000000000",
     "initializeTx": "",
-    "hookPermissionMask": "0x0450"
+    "hookPermissionMask": "0x0550"
   },
   "contracts": {
     "qusd": "",
     "dragon": "",
+    "registry": "",
+    "prizeVault": "",
+    "feeVault": "",
     "hook": "",
     "router": ""
   },
   "demo": {
-    "entryFeeQusd": "1",
+    "entryFeeQusd": "5",
     "initialBudgetQusd": "100",
     "holdSeconds": 180,
     "path": ["Donate", "Add LP", "Buy DRAGON", "Hold", "Sell DRAGON"]
