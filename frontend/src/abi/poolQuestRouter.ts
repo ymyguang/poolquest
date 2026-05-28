@@ -10,51 +10,76 @@ export const poolQuestRouterAbi = [
     type: 'function',
     name: 'enterRun',
     stateMutability: 'nonpayable',
-    inputs: [],
+    inputs: [
+      { name: 'player', type: 'address' },
+      { name: 'agentId', type: 'bytes32' },
+      { name: 'creator', type: 'address' },
+      { name: 'totalSteps', type: 'uint8' },
+      { name: 'ruleHash', type: 'bytes32' }
+    ],
+    outputs: []
+  },
+  {
+    type: 'function',
+    name: 'enterSelf',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'agentId', type: 'bytes32' },
+      { name: 'creator', type: 'address' },
+      { name: 'totalSteps', type: 'uint8' },
+      { name: 'ruleHash', type: 'bytes32' }
+    ],
     outputs: []
   },
   {
     type: 'function',
     name: 'donate',
     stateMutability: 'nonpayable',
-    inputs: [{ name: 'amount', type: 'uint256' }],
-    outputs: []
+    inputs: [{ name: 'amountQusd', type: 'uint256' }],
+    outputs: [{ name: 'delta', type: 'int256' }]
   },
   {
     type: 'function',
-    name: 'addDemoLiquidity',
+    name: 'addLiquidity',
     stateMutability: 'nonpayable',
     inputs: [
       { name: 'qusdAmount', type: 'uint256' },
-      { name: 'dragonAmount', type: 'uint256' }
+      { name: 'agentAmount', type: 'uint256' },
+      { name: 'liquidityDelta', type: 'int256' }
     ],
-    outputs: []
+    outputs: [{ name: 'delta', type: 'int256' }]
   },
   {
     type: 'function',
-    name: 'swapDemo',
+    name: 'removeLiquidity',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'liquidityDelta', type: 'int256' }],
+    outputs: [{ name: 'delta', type: 'int256' }]
+  },
+  {
+    type: 'function',
+    name: 'swapBuy',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'amountQusdIn', type: 'uint256' }],
+    outputs: [{ name: 'delta', type: 'int256' }]
+  },
+  {
+    type: 'function',
+    name: 'swapSell',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'amountAgentIn', type: 'uint256' }],
+    outputs: [{ name: 'delta', type: 'int256' }]
+  },
+  {
+    type: 'function',
+    name: 'purchaseHint',
     stateMutability: 'nonpayable',
     inputs: [
-      { name: 'buyDragon', type: 'bool' },
-      { name: 'amountIn', type: 'uint256' }
-    ],
-    outputs: []
-  },
-  {
-    type: 'function',
-    name: 'claimHold',
-    stateMutability: 'nonpayable',
-    inputs: [],
-    outputs: []
-  },
-  {
-    type: 'function',
-    name: 'askHint',
-    stateMutability: 'nonpayable',
-    inputs: [{ name: 'level', type: 'uint8' }],
-    outputs: [
+      { name: 'player', type: 'address' },
+      { name: 'level', type: 'uint8' },
       { name: 'feeQusd', type: 'uint256' },
       { name: 'penalty', type: 'int256' }
-    ]
+    ],
+    outputs: []
   }
 ] as const;

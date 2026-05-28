@@ -4,8 +4,8 @@ import { defineChain } from 'viem';
 import { xlayerDeployment } from './deployment';
 
 export const xLayer = defineChain({
-  id: 196,
-  name: 'X Layer Mainnet',
+  id: xlayerDeployment.network.chainId,
+  name: xlayerDeployment.network.name,
   nativeCurrency: { name: 'OKB', symbol: 'OKB', decimals: 18 },
   rpcUrls: { default: { http: [xlayerDeployment.network.rpcUrl] } },
   blockExplorers: { default: { name: 'OKLink', url: xlayerDeployment.network.explorerUrl } }

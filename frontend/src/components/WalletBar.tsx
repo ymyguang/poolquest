@@ -1,59 +1,67 @@
-import { Cable, CheckCircle2, ExternalLink, PlugZap, TriangleAlert } from 'lucide-react';
-import { xlayerDeployment } from '../config/deployment';
+import { Link } from 'react-router-dom';
+import { useConnect, useDisconnect, useSwitchChain } from 'wagmi';
+import { xLayer } from '../config/wagmi';
 import type { WalletState } from '../lib/wallet';
 
-type Props = {
+export function WalletBar({ wallet }: {
   wallet: WalletState;
-  onConnect: () => void;
-  onSwitch: () => void;
-};
-
-const shortAddress = (address: string) => `${address.slice(0, 6)}...${address.slice(-4)}`;
-
-export function WalletBar({ wallet, onConnect, onSwitch }: Props) {
-  const connected = wallet.status === 'connected';
-  const wrongNetwork = wallet.status === 'wrong-network';
+}) {
+  const { connect, connectors, isPending } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { switchChain, isPending: switching } = useSwitchChain();
+  const injected = connectors[0];
+  const hasWallet = connectors.length > 0;
+  const walletLabel = injected?.name || '浏览器钱包';
 
   return (
-    <header className="wallet-bar">
-      <div className="brand-lockup">
+    <nav className="wallet-bar">
+      <Link to="/" className="brand-lockup">
         <div className="brand-mark">PQ</div>
         <div>
-          <p className="eyebrow">Uniswap V4 Hook on X Layer</p>
-          <h1>PoolQuest Dragon Trial</h1>
+          <p className="eyebrow">PoolQuest</p>
+          <p className="brand-sub">X Layer Hook 游戏</p>
         </div>
-      </div>
-      <div className="wallet-actions">
-        <a className="network-pill" href={xlayerDeployment.network.explorerUrl} target="_blank" rel="noreferrer">
-          <Cable size={16} />
-          X Layer
-          <ExternalLink size={14} />
-        </a>
-        {wallet.status === 'missing' && (
-          <button className="primary-button muted" type="button" disabled>
-            <TriangleAlert size={17} />
-            Wallet missing
-          </button>
-        )}
+      </Link>
+
+      <div className="wallet-info">
         {wallet.status === 'disconnected' && (
-          <button className="primary-button" type="button" onClick={onConnect}>
-            <PlugZap size={17} />
-            Connect
-          </button>
+          <div className="wallet-connect-panel">
+            <div className="wallet-copy">
+              <span className="wallet-status">支持 OKX / MetaMask / 浏览器钱包</span>
+              <small>请连接钱包并切换到 X Layer Testnet</small>
+            </div>
+            <button
+              className="btn btn-primary"
+              disabled={!hasWallet || isPending}
+              onClick={() => injected && connect({ connector: injected, chainId: xLayer.id })}
+            >
+              {isPending ? '连接中...' : `连接 ${walletLabel}`}
+            </button>
+          </div>
         )}
-        {wrongNetwork && (
-          <button className="primary-button warn" type="button" onClick={onSwitch}>
-            <TriangleAlert size={17} />
-            Switch network
-          </button>
+        {wallet.status === 'wrong-network' && (
+          <div className="wallet-connect-panel">
+            <span className="wallet-address">{wallet.address?.slice(0, 6)}...{wallet.address?.slice(-4)}</span>
+            <button
+              className="btn btn-warning"
+              disabled={switching}
+              onClick={() => switchChain({ chainId: xLayer.id })}
+            >
+              {switching ? '切换中...' : '切换到 X Layer 测试网'}
+            </button>
+            <button className="btn btn-secondary" onClick={() => disconnect()}>断开</button>
+          </div>
         )}
-        {connected && wallet.address && (
-          <button className="primary-button success" type="button" onClick={onConnect}>
-            <CheckCircle2 size={17} />
-            {shortAddress(wallet.address)}
-          </button>
+        {wallet.status === 'connected' && wallet.address && (
+          <div className="wallet-connect-panel">
+            <span className="network-chip">X Layer Testnet</span>
+            <span className="wallet-address">
+              {wallet.address.slice(0, 6)}...{wallet.address.slice(-4)}
+            </span>
+            <button className="btn btn-secondary" onClick={() => disconnect()}>断开</button>
+          </div>
         )}
       </div>
-    </header>
+    </nav>
   );
 }
